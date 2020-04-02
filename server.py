@@ -1,14 +1,11 @@
 import os
-from flask import Flask, jsonify, abort, request, make_response, url_for,redirect,render_template,flash
+import json
 from datetime import datetime
+from flask import Flask, jsonify, abort, request, make_response, url_for,redirect,render_template,flash
+
+
+
 app = Flask("Smart Bin")
-bin_size=150
-bin_id = 473811
-last_emptied_time = datetime.today()
-location = "2400 Durant Ave."
-scanned_items = 23
-unscanned_items = 35
-articles = ["glass", "plastic", "unknown","cardboard"]
 
 @app.errorhandler(400)
 def not_found(error):
@@ -24,25 +21,75 @@ def unhandled_exception(e):
 @app.route('/getbins', methods=['POST'])
 def get_bins():
     if request.method == 'POST':
-    	if scanned_items + unscanned_items == 0:
-    		contamination_rate = 0
-    		percent_full = 0
-    	else:
-	    	contamination_rate = (0.95 * scanned_items) / (scanned_items + unscanned_items)
-	    	percent_full = (scanned_items + unscanned_items) / float(bin_size)
-    	return jsonify({'bin_size':bin_size, 'bin_id':bin_id, 'articles':articles,'last_emptied_time':last_emptied_time,'location':location,'scanned_items':scanned_items,'unscanned_items':unscanned_items, 'contamination_rate':contamination_rate, 'percent_full':percent_full})
+    	bin_info = request.get_json(force=True)
+    	file_name = list(bin_info.keys())[0]
+    	with open(file_name + '.json') as f:
+    		data = json.load(f)
+    		bins = bin_info[file_name]
+    		return_json = {}
+    		for b in bins:
+    			return_json[b] = data[b];
+    	return jsonify(return_json)
+    	#return jsonify({'bin_size':bin_size, 'bin_id':bin_id, 'articles':articles,'last_emptied_time':last_emptied_time,'location':location,'scanned_items':scanned_items,'unscanned_items':unscanned_items, 'contamination_rate':contamination_rate, 'percent_full':percent_full})
     else:
     	abort(400)
+
+@app.route('/getcontamination', methods=['POST'])
+def get_contamination():
+    if request.method == 'POST':
+    	bin_info = request.get_json(force=True)
+    	file_name = list(bin_info.keys())[0]
+    	with open(file_name + '.json') as f:
+    		data = json.load(f)
+    		bins = bin_info[file_name]
+    		return_json = {}
+    		for b in bins:
+    			return_json[b] = {};
+    			if (data[b]['scanned_items'] + data[b]['unscanned_items'] == 0):
+    				return_json[b]['contamination_rate'] = 0
+    			else:
+    				return_json[b]['contamination_rate'] = (data[b]['scanned_items']/(data[b]['scanned_items'] + data[b]['unscanned_items']))
+    	return jsonify(return_json)
+    else:
+    	abort(400)
+
+
+@app.route('/getpercentfull', methods=['POST'])
+def get_percent_full():
+    if request.method == 'POST':
+    	bin_info = request.get_json(force=True)
+    	file_name = list(bin_info.keys())[0]
+    	with open(file_name + '.json') as f:
+    		data = json.load(f)
+    		bins = bin_info[file_name]
+    		return_json = {}
+    		for b in bins:
+    			return_json[b] = {};
+    			if (data[b]['scanned_items'] + data[b]['unscanned_items'] == 0):
+    				return_json[b]['percent_full'] = 0.0
+    			else:
+    				return_json[b]['percent_full'] = (data[b]['scanned_items'] + data[b]['unscanned_items'])/(data[b]['bin_size'])
+    	return jsonify(return_json)
+    else:
+    	abort(400)
+
 
 @app.route('/empty', methods=['POST'])
 def empty_bins():
     if request.method == 'POST':
-    	global last_emptied_time
-    	global scanned_items
-    	global unscanned_items
-    	last_emptied_time = datetime.today()
-    	scanned_items = 0
-    	unscanned_items = 0
+    	bin_info = request.get_json(force=True)
+    	file_name = list(bin_info.keys())[0]
+    	with open(file_name + '.json') as f:
+    		data = json.load(f)
+    		bins = bin_info[file_name]
+    		return_json = {}
+    		for b in bins:
+    			data[b]['unscanned_items'] = 0
+    			data[b]['scanned_items'] = 0
+    			data[b]['articles'] = []
+    			data[b]['last_emptied_time'] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    	with open(file_name + '.json', 'w') as json_file:
+    		json.dump(data, json_file)
     	return 'The bin has been emptied'
     else:
     	abort(400)
