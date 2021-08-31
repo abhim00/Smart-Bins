@@ -1,0 +1,6 @@
+uploads/*.jpg
+uploads/*.png
+/ui/node_modules
+/node_modules
+/ml-model/data/*.jpg
+*__pycache__
