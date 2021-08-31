@@ -34,7 +34,7 @@ def get_bins():
     else:
     	abort(400)
 
-@app.route('/getcontamination', methods=['POST'])
+@app.route('/getintegrity', methods=['POST'])
 def get_contamination():
     if request.method == 'POST':
     	bin_info = request.get_json(force=True)
@@ -46,9 +46,9 @@ def get_contamination():
     		for b in bins:
     			return_json[b] = {};
     			if (data[b]['scanned_items'] + data[b]['unscanned_items'] == 0):
-    				return_json[b]['contamination_rate'] = 0
+    				return_json[b]['integrity'] = 0
     			else:
-    				return_json[b]['contamination_rate'] = (data[b]['scanned_items']/(data[b]['scanned_items'] + data[b]['unscanned_items']))
+    				return_json[b]['integrity'] = (data[b]['scanned_items']/(data[b]['scanned_items'] + data[b]['unscanned_items']))
     	return jsonify(return_json)
     else:
     	abort(400)
@@ -87,7 +87,7 @@ def empty_bins():
     			data[b]['unscanned_items'] = 0
     			data[b]['scanned_items'] = 0
     			data[b]['articles'] = []
-    			data[b]['last_emptied_time'] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    			data[b]['last_emptied_time'] = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
     	with open(file_name + '.json', 'w') as json_file:
     		json.dump(data, json_file)
     	return 'The bin has been emptied'
